@@ -1,0 +1,107 @@
+Peer Assignment 1
+======================================================
+####Author:Carlos José Rivas
+####Course: Reproducible Research-Coursera
+
+
+Setting the Working Directory
+```{r SettingWd, echo=TRUE}
+setwd("C:/Users/CarlosJosé/Desktop/Data Mining/Jonhs Hopkins/Ciencia de Datos/Reproducible Research/Peer Asigment")  
+```
+**Reading the activity.csv**
+```{r ReadCSV, echo=TRUE}
+myTbl=read.csv("activity.csv", colClasses = c("numeric","Date","numeric"))
+##Creating sub set with NA removed
+dataNAOmitted= subset(myTbl, is.na(myTbl$steps)==F)
+```
+what is mean total number of steps taken per day?
+1-Make a histogram of the total number of steps taken each day
+```{r}
+library(plyr)
+TotalPerDay= ddply(dataNAOmitted, .(date), summarise, steps=sum(steps))
+hist(TotalPerDay$steps,col="blue")
+```
+2.Calculate and report the mean and median total number of steps taken per day
+
+```{r echo=TRUE}
+##Mean
+mean(TotalPerDay$steps)
+##mediana
+median(TotalPerDay$steps)
+```
+What is the average daily activity patter?
+```{r echo=TRUE}
+avgPerInterval= ddply(dataNAOmitted, .(interval),summarise, steps=mean(steps))
+plot(avgPerInterval$interval, avgPerInterval$steps, type="l")
+```
+Which 5 minute interval, on average across all the days in the dataset contains the maximum number of steps
+
+```{r echo=TRUE}
+avgPerInterval[which.max(avgPerInterval$steps),]
+```
+
+Imputting missing values
+```{r echo=TRUE}
+##Cantidad de NA
+sum(is.na(myTbl$steps))
+##i will try to fill NA with average
+##Creating new data set
+imput= myTbl
+for(i in 1:nrow(imput)){
+        if (is.na(imput$steps[i])) {
+           imput$steps[i]= avgPerInterval$steps[which(imput$interval[i]==avgPerInterval$interval)]
+        }
+}
+
+imput= arrange(imput,interval)
+TotPerdayImputed= ddply(imput, .(date),summarise, steps=sum(steps))
+hist(TotPerdayImputed$steps,col="blue")
+##media
+mean(TotPerdayImputed$steps)
+##mediana
+median(TotPerdayImputed$steps)
+##diferencias
+abs(mean(TotalPerDay$steps)-mean(TotPerdayImputed$steps))
+abs(median(TotalPerDay$steps)-median(TotPerdayImputed$steps))
+##steps difference
+GranDiff= sum(imput$steps)- sum(dataNAOmitted$steps)
+GranDiff
+```
+
+Create a new factor variable in the data set with two levels weekday and weekend
+
+```{r}
+Sys.setlocale("LC_TIME", "English")
+imput$weekdays=weekdays(as.Date(imput$date))
+imput$weekdays= ifelse(imput$weekdays %in% c("Saturday", "Sunday"), "weekend", 
+    "weekday")
+
+myAvg= ddply(imput, .(interval,weekdays), summarise, steps=mean(steps))
+
+library(lattice)
+xyplot(steps~interval|weekdays, data=myAvg, layout=c(1,2),type="l")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
